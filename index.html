@@ -28,13 +28,19 @@ header{background:linear-gradient(135deg,#1d4ed8,#2563eb,#38bdf8);color:#fff;pad
 </style>
 </head>
 <body>
-<div id="login" class="login"><div class="loginbox">
-<div style="font-size:34px">🧭</div><h1 style="color:#172033">Jeevan Sahayak</h1><p style="color:#667085">Your personal daily-life assistant.</p>
-<label>Name</label><input id="loginName" maxlength="30" placeholder="Your name">
-<label>Password</label><input id="loginPassword" type="password" maxlength="30" placeholder="Enter Your Password 8-30 Characters">
-<button class="btn" style="width:100%" onclick="signIn()">Start App</button>
-<p class="note">This standalone edition keeps your account locally on this device. For production multi-device login, connect a secure backend.</p>
-</div></div>
+<div id="login" class="login">
+  <div class="loginbox">
+    <div style="font-size:34px">🧭</div>
+    <h1 style="color:#172033">Jeevan Sahayak</h1>
+    <p style="color:#667085">Your personal daily-life assistant.</p>
+    <label>Name</label>
+    <input id="loginName" maxlength="30" placeholder="Enter Your name">
+    <label>PIN / Password</label>
+    <input id="loginPin" type="password" maxlength="30" placeholder="Enter Your Password 4+ characters">
+    <button class="btn" style="width:100%" onclick="signIn()">Sign In</button>
+    <p class="note">This standalone edition keeps your account locally on this device. For production multi-device login, connect a secure backend.</p>
+  </div>
+</div>
 
 <div id="app" class="hidden">
 <header><div class="head"><div class="brand"><div class="logo">🧭</div><div><h1>Jeevan Sahayak</h1><div class="sub">Smart Daily Life Assistant</div></div></div>
@@ -64,7 +70,7 @@ header{background:linear-gradient(135deg,#1d4ed8,#2563eb,#38bdf8);color:#fff;pad
 
 <section id="tasks" class="page"><div class="row"><h2>📝 Tasks</h2><button class="btn" onclick="openModal('task')">+ Add</button></div><input id="qTask" class="search" placeholder="Search tasks..." oninput="renderAll()"><div class="card"><div id="tasksList" class="list"></div></div></section>
 <section id="reminders" class="page"><div class="row"><h2>⏰ Reminders</h2><button class="btn" onclick="openModal('reminder')">+ Add</button></div><input id="qRem" class="search" placeholder="Search reminders..." oninput="renderAll()"><div class="card"><div id="remList" class="list"></div></div></section>
-<section id="expenses" class="page"><div class="row"><h2>💰 Money</h2><button class="btn" onclick="openModal('expense')">+ Add</button></div><input id="qExp" class="search" placeholder="Search expenses..." oninput="renderAll()"><div class="grid"><div class="card stat"><span>Today</span><strong id="et">₹0</strong></div><div class="card stat"><span>This month</span><strong id="em">₹0</strong></div><div class="card stat"><span>Budget left</span><strong id="eb">₹0</strong></div><div class="card stat"><span>Records</span><strong id="ec">0</strong></div></div><div class="card" style="margin-top:13px"><div id="expList" class="list"></div></div></section>
+<section id="expenses" class="page"><div class="row"><h2>💰 Money</h2><button class="btn" onclick="openModal('expense')">+ Add</button></div><input id="qExp" class="search" placeholder="Search expenses..." oninput="renderAll()"><div class="grid"><div class="card stat"><span>Today</span><strong id="et">₹0</strong></div><div class="card stat"><span>This month</span><strong id="em">₹0</strong></div><div class="card stat" onclick="editBudget()" style="cursor:pointer" title="Click to update monthly budget"><span>Budget left ✏️</span><strong id="eb">₹0</strong></div><div class="card stat"><span>Records</span><strong id="ec">0</strong></div></div><div class="card" style="margin-top:13px"><div id="expList" class="list"></div></div></section>
 <section id="health" class="page"><div class="row"><h2>❤️ Health & Habits</h2><div class="actions"><button class="btn" onclick="openModal('medicine')">+ Medicine</button><button class="btn soft" onclick="openModal('habit')">+ Habit</button></div></div><div class="card" style="margin-top:13px"><h3>💧 Water</h3><p><b id="wc">0</b> / <span id="wg">8</span> glasses</p><div class="progress"><i id="wb"></i></div><div class="actions" style="margin-top:10px"><button class="btn" onclick="addWater()">+ Glass</button><button class="btn soft" onclick="setGoal()">Set goal</button><button class="btn danger" onclick="resetWater()">Reset</button></div></div><div class="card" style="margin-top:13px"><h3>💊 Medicines</h3><div id="medList" class="list"></div></div><div class="card" style="margin-top:13px"><h3>🌱 Habits</h3><div id="habitList" class="list"></div></div></section>
 <section id="notes" class="page"><div class="row"><h2>📌 Notes</h2><button class="btn" onclick="openModal('note')">+ Note</button></div><input id="qNote" class="search" placeholder="Search notes..." oninput="renderAll()"><div class="card"><div id="noteList" class="list"></div></div></section>
 <section id="contacts" class="page"><div class="row"><h2>🆘 Trusted Contacts</h2><button class="btn" onclick="openModal('contact')">+ Add</button></div><input id="qCon" class="search" placeholder="Search contacts..." oninput="renderAll()"><div class="card"><div id="conList" class="list"></div></div></section>
@@ -78,76 +84,55 @@ header{background:linear-gradient(135deg,#1d4ed8,#2563eb,#38bdf8);color:#fff;pad
 <div id="toast" class="toast"></div>
 
 <script>
-const KEY="jeevan_sahayak_real_v1";let S=load(),type="",editId=null,deferredPrompt=null;
-const base={tasks:[],reminders:[],expenses:[],medicines:[],habits:[],notes:[],contacts:[],goals:[],water:{date:today(),count:0,goal:8},budget:5000,theme:"light",user:null,pin:null,notified:{}};
-function today(){return new Date().toISOString().slice(0,10)}function load(){try{return Object.assign({},base,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch{return {...base}}}
-function save(){localStorage.setItem(KEY,JSON.stringify(S));renderAll()}function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function money(n){return"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
+const KEY="jeevan_sahayak_real_v1";
+
+function today(){
+  let d=new Date();
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+
+const base={
+  tasks:[], reminders:[], expenses:[], medicines:[], habits:[], notes:[], contacts:[], goals:[],
+  water:{date:today(),count:0,goal:8}, budget:5000, theme:"light", user:null, pin:null, notified:{}
+};
+
+function load(){
+  try{
+    return Object.assign({}, base, JSON.parse(localStorage.getItem(KEY)||"{}"));
+  }catch(e){
+    return JSON.parse(JSON.stringify(base));
+  }
+}
+
+let S = load();
+let type="", editId=null, deferredPrompt=null;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(S));renderAll()}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function money(n){return"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2})}
 function toast(x){let t=document.getElementById("toast");t.textContent=x;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-function signIn(){let n=document.getElementById("loginName").value.trim(),p=document.getElementById("loginPin").value;if(n.length<2||p.length<4)return toast("Name and 4+ character PIN required.");if(!S.pin){S.user=n;S.pin=p;save()}else if(n!==S.user||p!==S.pin)return toast("Incorrect login details.");S.user=n;localStorage.setItem(KEY,JSON.stringify(S));showApp();toast("Welcome "+n+"!")}
+
+function signIn(){
+  let n=document.getElementById("loginName").value.trim(),p=document.getElementById("loginPin").value;
+  if(n.length<2||p.length<4)return toast("Name and 4+ character PIN required.");
+  if(!S.pin){S.user=n;S.pin=p;save()}
+  else if(n!==S.user||p!==S.pin)return toast("Incorrect login details.");
+  S.user=n;localStorage.setItem(KEY,JSON.stringify(S));showApp();toast("Welcome "+n+"!")
+}
+
 function showApp(){document.getElementById("login").classList.add("hidden");document.getElementById("app").classList.remove("hidden");applyTheme();renderAll()}
 function logout(){document.getElementById("app").classList.add("hidden");document.getElementById("login").classList.remove("hidden");document.getElementById("loginPin").value=""}
-function toggleTheme(){S.theme=S.theme==="dark"?"light":"dark";save();applyTheme()}function applyTheme(){document.documentElement.dataset.theme=S.theme;document.getElementById("hello").textContent="Hi, "+(S.user||"")}
+function toggleTheme(){S.theme=S.theme==="dark"?"light":"dark";save();applyTheme()}
+function applyTheme(){document.documentElement.dataset.theme=S.theme;document.getElementById("hello").textContent="Hi, "+(S.user||"")}
 function go(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.page===id))}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>go(b.dataset.page));
 function ensureDay(){if(S.water.date!==today())S.water={date:today(),count:0,goal:Number(S.water.goal)||8}}
-function openModal(t,id=null){type=t;editId=id;let key={task:"tasks",reminder:"reminders",expense:"expenses",medicine:"medicines",habit:"habits",note:"notes",contact:"contacts",goal:"goals"}[t],x=id?S[key].find(a=>a.id===id):null;document.getElementById("mtitle").textContent=(id?"Edit ":"Add ")+t;
-let fields={
-task:`<div class="form"><div class="field full"><label>Task</label><input name="title" maxlength="100" required value="${esc(x?.title)}"></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Priority</label><select name="priority"><option ${x?.priority==="Normal"?"selected":""}>Normal</option><option ${x?.priority==="High"?"selected":""}>High</option><option ${x?.priority==="Low"?"selected":""}>Low</option></select></div></div>`,
-reminder:`<div class="form"><div class="field full"><label>Reminder</label><input name="title" maxlength="100" required value="${esc(x?.title)}"></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Time</label><input name="time" type="time" required value="${x?.time||""}"></div></div>`,
-expense:`<div class="form"><div class="field"><label>Amount ₹</label><input name="amount" type="number" min=".01" step=".01" required value="${x?.amount||""}"></div><div class="field"><label>Category</label><select name="category">${["Food","Travel","Study","Shopping","Bills","Health","Other"].map(c=>`<option ${x?.category===c?"selected":""}>${c}</option>`).join("")}</select></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Note</label><input name="note" maxlength="100" value="${esc(x?.note)}"></div></div>`,
-medicine:`<div class="form"><div class="field"><label>Medicine</label><input name="name" required maxlength="60" value="${esc(x?.name)}"></div><div class="field"><label>Time</label><input name="time" type="time" required value="${x?.time||""}"></div><div class="field full"><label>Instruction</label><input name="note" maxlength="100" value="${esc(x?.note)}"></div></div>`,
-habit:`<div class="form"><div class="field full"><label>Habit</label><input name="name" required maxlength="60" placeholder="e.g. Read 20 minutes" value="${esc(x?.name)}"></div></div>`,
-note:`<div class="form"><div class="field full"><label>Title</label><input name="title" required maxlength="80" value="${esc(x?.title)}"></div><div class="field full"><label>Note</label><textarea name="body" maxlength="1000">${esc(x?.body)}</textarea></div></div>`,
-goal:`<div class="form"><div class="field full"><label>Goal</label><input name="title" required maxlength="80" value="${esc(x?.title)}"></div><div class="field"><label>Target</label><input name="target" type="number" min="1" required value="${x?.target||1}"></div><div class="field"><label>Unit</label><input name="unit" maxlength="20" value="${esc(x?.unit||"times")}"></div></div>`,
-contact:`<div class="form"><div class="field"><label>Name</label><input name="name" required maxlength="60" value="${esc(x?.name)}"></div><div class="field"><label>Phone</label><input name="phone" required maxlength="20" value="${esc(x?.phone)}"></div><div class="field full"><label>Relation</label><input name="relation" maxlength="40" value="${esc(x?.relation)}"></div></div>`};document.getElementById("fields").innerHTML=fields[t];document.getElementById("modal").classList.add("show")}
-function closeModal(){document.getElementById("modal").classList.remove("show");editId=null}
-function saveForm(e){e.preventDefault();let d=Object.fromEntries(new FormData(e.target));let key={task:"tasks",reminder:"reminders",expense:"expenses",medicine:"medicines",habit:"habits",note:"notes",contact:"contacts"}[type];if(type==="expense")d.amount=Number(d.amount);if(type==="goal"){d.target=Number(d.target);d.progress=editId?(S.goals.find(a=>a.id===editId)?.progress||0):0}if(editId){let i=S[key].findIndex(x=>x.id===editId);S[key][i]={...S[key][i],...d}}else S[key].push({id:Date.now(),...d,...((type==="task"||type==="reminder")?{done:false}:{})});save();closeModal();toast("Saved")}
-function del(k,id){S[k]=S[k].filter(x=>x.id!==id);save();toast("Deleted")}function edit(t,id){openModal(t,id)}function toggle(k,id){let x=S[k].find(a=>a.id===id);if(x)x.done=!x.done;save()}
-function search(a,id,fields){let q=(document.getElementById(id)?.value||"").toLowerCase();return a.filter(x=>fields.some(f=>String(x[f]??"").toLowerCase().includes(q)))}
-function row(x,t){let k={task:"tasks",reminder:"reminders",expense:"expenses",medicine:"medicines",habit:"habits",note:"notes",contact:"contacts",goal:"goals"}[t];let editb=`<button class="btn sm soft" onclick="edit('${t}',${x.id})">Edit</button>`,delb=`<button class="btn sm danger" onclick="del('${k}',${x.id})">Delete</button>`;
-if(t==="task")return`<div class="item ${x.done?"done":""}"><div class="main"><div class="title">📝 ${esc(x.title)}</div><div class="meta">${x.date} • ${esc(x.priority)}</div></div><div class="actions"><button class="btn sm ok" onclick="toggle('tasks',${x.id})">${x.done?"Undo":"Done"}</button>${editb}${delb}</div></div>`;
-if(t==="reminder")return`<div class="item ${x.done?"done":""}"><div class="main"><div class="title">⏰ ${esc(x.title)}</div><div class="meta">${x.date} at ${x.time}</div></div><div class="actions"><button class="btn sm ok" onclick="toggle('reminders',${x.id})">${x.done?"Undo":"Done"}</button>${editb}${delb}</div></div>`;
-if(t==="expense")return`<div class="item"><div class="main"><div class="title">${esc(x.category)} — ${money(x.amount)}</div><div class="meta">${x.date}${x.note?" • "+esc(x.note):""}</div></div><div class="actions">${editb}${delb}</div></div>`;
-if(t==="medicine")return`<div class="item"><div class="main"><div class="title">💊 ${esc(x.name)}</div><div class="meta">${x.time}${x.note?" • "+esc(x.note):""}</div></div><div class="actions">${editb}${delb}</div></div>`;
-if(t==="habit")return`<div class="item"><div class="main"><div class="title">🌱 ${esc(x.name)}</div><div class="meta">Daily habit</div></div><div class="actions"><button class="btn sm ok" onclick="habitDone(${x.id})">${x.doneDate===today()?"Done":"Mark done"}</button>${editb}${delb}</div></div>`;
-if(t==="goal")return`<div class="item"><div class="main"><div class="title">🎯 ${esc(x.title)}</div><div class="meta">${x.progress||0}/${x.target} ${esc(x.unit||"times")}</div><div class="progress" style="margin-top:6px"><i style="width:${Math.min(100,(x.progress||0)/x.target*100)}%"></i></div></div><div class="actions"><button class="btn sm ok" onclick="goalPlus(${x.id})">+1</button>${editb}${delb}</div></div>`;
-if(t==="note")return`<div class="item"><div class="main"><div class="title">📌 ${esc(x.title)}</div><div class="meta">${esc(x.body)}</div></div><div class="actions">${editb}${delb}</div></div>`;
-return`<div class="item"><div class="main"><div class="title">👤 ${esc(x.name)}</div><div class="meta">${esc(x.relation||"Trusted")} • ${esc(x.phone)}</div></div><div class="actions"><a class="btn sm" href="tel:${encodeURIComponent(x.phone)}">Call</a>${editb}${delb}</div></div>`}
-function habitDone(id){let x=S.habits.find(a=>a.id===id);if(x)x.doneDate=x.doneDate===today()?"":today();save()}
-function addWater(){ensureDay();S.water.count=Math.min(99,S.water.count+1);save();toast("Water logged 💧")}function resetWater(){ensureDay();S.water.count=0;save()}function setGoal(){let n=prompt("Daily goal (glasses)",S.water.goal);if(n&&Number(n)>0){S.water.goal=Math.min(50,Math.round(Number(n)));save()}}
-function renderAll(){ensureDay();applyTheme();let t=S.tasks.filter(x=>x.date===today()),r=S.reminders.filter(x=>x.date===today()),e=S.expenses.filter(x=>x.date===today());document.getElementById("st").textContent=`${t.filter(x=>x.done).length}/${t.length}`;document.getElementById("sr").textContent=r.filter(x=>!x.done).length;document.getElementById("se").textContent=money(e.reduce((a,x)=>a+x.amount,0));let wp=Math.min(100,Math.round(S.water.count/S.water.goal*100));document.getElementById("sw").textContent=wp+"%";document.getElementById("homeWater").style.width=wp+"%";document.getElementById("todayDate").textContent=new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short"});
-document.getElementById("tasksList").innerHTML=search(S.tasks,"qTask",["title","priority"]).map(x=>row(x,"task")).join("")||'<div class="meta">No tasks found.</div>';
-document.getElementById("remList").innerHTML=search(S.reminders,"qRem",["title","date"]).map(x=>row(x,"reminder")).join("")||'<div class="meta">No reminders found.</div>';
-document.getElementById("expList").innerHTML=search(S.expenses,"qExp",["category","note"]).map(x=>row(x,"expense")).join("")||'<div class="meta">No expenses found.</div>';
-document.getElementById("medList").innerHTML=S.medicines.map(x=>row(x,"medicine")).join("")||'<div class="meta">No medicines yet.</div>';
-document.getElementById("habitList").innerHTML=S.habits.map(x=>row(x,"habit")).join("")||'<div class="meta">No habits yet.</div>';
-document.getElementById("noteList").innerHTML=search(S.notes,"qNote",["title","body"]).map(x=>row(x,"note")).join("")||'<div class="meta">No notes found.</div>';
-document.getElementById("conList").innerHTML=search(S.contacts,"qCon",["name","phone","relation"]).map(x=>row(x,"contact")).join("")||'<div class="meta">No contacts found.</div>';document.getElementById("goalList").innerHTML=S.goals.map(x=>row(x,"goal")).join("")||'<div class="meta">No goals yet. Add one!</div>';document.getElementById("goalCount").textContent=S.goals.length;document.getElementById("noteCount").textContent=S.notes.length;document.getElementById("streak").textContent=calcStreak();document.getElementById("badgeCount").textContent=calcBadges().length;renderCalendar();renderBadges();
-document.getElementById("wc").textContent=S.water.count;document.getElementById("wg").textContent=S.water.goal;document.getElementById("wb").style.width=wp+"%";document.getElementById("et").textContent=money(e.reduce((a,x)=>a+x.amount,0));let ym=today().slice(0,7),m=S.expenses.filter(x=>x.date.startsWith(ym)),mt=m.reduce((a,x)=>a+x.amount,0);document.getElementById("em").textContent=money(mt);document.getElementById("eb").textContent=money(S.budget-mt);document.getElementById("ec").textContent=S.expenses.length;
-let focus=[...t.filter(x=>!x.done).slice(0,5).map(x=>row(x,"task")),...r.filter(x=>!x.done).slice(0,3).map(x=>row(x,"reminder"))];document.getElementById("focus").innerHTML=focus.join("")||'<div class="meta">🎉 Nothing pending today.</div>';renderReports();notifStatus()}
-function renderReports(){let m=S.expenses.filter(x=>x.date.startsWith(today().slice(0,7))),c={};m.forEach(x=>c[x.category]=(c[x.category]||0)+x.amount);let a=Object.entries(c),max=Math.max(...a.map(x=>x[1]),1);document.getElementById("chart").innerHTML=a.length?a.map(([k,v])=>`<div class="bar" style="height:${Math.max(5,v/max*155)}px"><em>${money(v)}</em><small>${esc(k)}</small></div>`).join(""):'<div class="meta">No expense data.</div>';document.getElementById("summary").innerHTML=a.sort((x,y)=>y[1]-x[1]).map(x=>`<div class="item"><b>${esc(x[0])}</b><span>${money(x[1])}</span></div>`).join("")||'<div class="meta">No data.</div>'}
 
-let calOffset=0;
-function moveDay(n){calOffset+=n;renderCalendar()}
-function calDay(){let d=new Date();d.setDate(d.getDate()+calOffset);return d.toISOString().slice(0,10)}
-function renderCalendar(){let d=calDay();let el=document.getElementById("calDate");if(el)el.textContent=new Date(d+"T12:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"});let list=document.getElementById("calList");if(!list)return;let a=[...S.tasks.filter(x=>x.date===d).map(x=>row(x,"task")),...S.reminders.filter(x=>x.date===d).map(x=>row(x,"reminder"))];list.innerHTML=a.join("")||'<div class="meta">Nothing scheduled for this day.</div>'}
-function goalPlus(id){let x=S.goals.find(a=>a.id===id);if(x){x.progress=Math.min(Number(x.target),Number(x.progress||0)+1);save();toast("Goal progress updated 🎯")}}
-function calcStreak(){let score=0;for(let i=0;i<30;i++){let d=new Date();d.setDate(d.getDate()-i);let ds=d.toISOString().slice(0,10);let done=S.tasks.some(x=>x.date===ds&&x.done)||S.habits.some(x=>x.doneDate===ds);if(done)score++;else if(i>0)break}return score}
-function calcBadges(){let b=[];if(S.tasks.some(x=>x.done))b.push(["Task Starter","Completed your first task"]);if(S.expenses.length>=5)b.push(["Money Tracker","Logged 5 expenses"]);if(S.habits.length&&S.habits.some(x=>x.doneDate))b.push(["Habit Builder","Completed a habit"]);if(S.water.count>=S.water.goal)b.push(["Hydration Hero","Reached today's water goal"]);if(S.notes.length>=3)b.push(["Note Keeper","Created 3 notes"]);if(S.goals.length>=1&&S.goals.some(x=>Number(x.progress)>=Number(x.target)))b.push(["Goal Getter","Completed a goal"]);return b}
-function renderBadges(){let el=document.getElementById("badges");if(!el)return;let b=calcBadges();el.innerHTML=b.map(x=>`<div class="item"><div><div class="title">🏆 ${esc(x[0])}</div><div class="meta">${esc(x[1])}</div></div><span class="badge">Unlocked</span></div>`).join("")||'<div class="meta">Complete activities to unlock badges.</div>'}
-
-function exportCSV(){let rows=[["Type","Date","Name/Title","Category","Amount","Time","Details"],...S.tasks.map(x=>["Task",x.date,x.title,"","","",x.priority]),...S.reminders.map(x=>["Reminder",x.date,x.title,"","",x.time,""]),...S.expenses.map(x=>["Expense",x.date,x.note||"",x.category,x.amount,"",""]),...S.medicines.map(x=>["Medicine","",x.name,"","",x.time,x.note||""]),...S.habits.map(x=>["Habit","",x.name,"","","",x.doneDate||""]),...S.notes.map(x=>["Note","",x.title,"","","",x.body]),...S.contacts.map(x=>["Contact","",x.name,"","","",x.phone]),...S.goals.map(x=>["Goal","",x.title,"",x.progress+"/"+x.target,"",x.unit||"times"])];let csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="jeevan-sahayak-data.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Excel-compatible CSV exported")}
-function printPDF(){let total=S.expenses.filter(x=>x.date.startsWith(today().slice(0,7))).reduce((a,x)=>a+x.amount,0),rows=S.expenses.filter(x=>x.date.startsWith(today().slice(0,7))).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.note||"")}</td><td>${money(x.amount)}</td></tr>`).join("");let w=window.open("","_blank");if(!w)return toast("Allow pop-ups to print PDF");w.document.write(`<html><body style="font-family:Arial;padding:30px"><h1>Jeevan Sahayak Report</h1><p>User: ${esc(S.user)} | Month: ${today().slice(0,7)}</p><h2>Total: ${money(total)}</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tr><th>Date</th><th>Category</th><th>Note</th><th>Amount</th></tr>${rows||"<tr><td colspan=4>No expenses</td></tr>"}</table></body></html>`);w.document.close();w.focus();w.print()}
-function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));a.download="jeevan-sahayak-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Backup exported")}
-function restore(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x||!Array.isArray(x.tasks))throw Error();S=Object.assign({},base,x);save();toast("Backup restored")}catch{toast("Invalid backup file")}};r.readAsText(f)}
-async function enableNotifications(){if(!("Notification"in window))return toast("Notifications are not supported in this browser.");let p=await Notification.requestPermission();toast(p==="granted"?"Notifications enabled":"Notification permission not granted");notifStatus()}
-function notifStatus(){let el=document.getElementById("notifStatus");if(el)el.textContent=("Notification"in window)?Notification.permission:"Not supported"}
-function checkReminders(){if(!S.user)return;let now=new Date(),date=now.toISOString().slice(0,10),hm=now.toTimeString().slice(0,5);S.reminders.filter(x=>x.date===date&&!x.done&&x.time===hm).forEach(x=>{let k=x.id+"_"+date+"_"+hm;if(!S.notified[k]){S.notified[k]=1;if("Notification"in window&&Notification.permission==="granted")new Notification("Jeevan Sahayak",{body:x.title});else toast("⏰ "+x.title);localStorage.setItem(KEY,JSON.stringify(S))}});S.medicines.filter(x=>x.time===hm).forEach(x=>{let k="m_"+x.id+"_"+date+"_"+hm;if(!S.notified[k]){S.notified[k]=1;if("Notification"in window&&Notification.permission==="granted")new Notification("Medicine reminder",{body:x.name});else toast("💊 "+x.name);localStorage.setItem(KEY,JSON.stringify(S))}})}
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e});async function installApp(){if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else toast("Browser menu se 'Install app' choose karein")}
-document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
-if(S.pin){document.getElementById("loginName").value=S.user||""}setInterval(checkReminders,30000);
-if(S.user&&S.pin)showApp();
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-</script>
-</body>
-</html>
+function openModal(t,id=null){
+  type=t;editId=id;let key={task:"tasks",reminder:"reminders",expense:"expenses",medicine:"medicines",habit:"habits",note:"notes",contact:"contacts",goal:"goals"}[t],x=id?S[key].find(a=>a.id===id):null;document.getElementById("mtitle").textContent=(id?"Edit ":"Add ")+t;
+  let fields={
+  task:`<div class="form"><div class="field full"><label>Task</label><input name="title" maxlength="100" required value="${esc(x?.title)}"></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Priority</label><select name="priority"><option ${x?.priority==="Normal"?"selected":""}>Normal</option><option ${x?.priority==="High"?"selected":""}>High</option><option ${x?.priority==="Low"?"selected":""}>Low</option></select></div></div>`,
+  reminder:`<div class="form"><div class="field full"><label>Reminder</label><input name="title" maxlength="100" required value="${esc(x?.title)}"></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Time</label><input name="time" type="time" required value="${x?.time||""}"></div></div>`,
+  expense:`<div class="form"><div class="field"><label>Amount ₹</label><input name="amount" type="number" min=".01" step=".01" required value="${x?.amount||""}"></div><div class="field"><label>Category</label><select name="category">${["Food","Travel","Study","Shopping","Bills","Health","Other"].map(c=>`<option ${x?.category===c?"selected":""}>${c}</option>`).join("")}</select></div><div class="field"><label>Date</label><input name="date" type="date" required value="${x?.date||today()}"></div><div class="field"><label>Note</label><input name="note" maxlength="100" value="${esc(x?.note)}"></div></div>`,
+  med
